@@ -1,0 +1,1165 @@
+{
+ "cells": [
+  {
+   "cell_type": "code",
+   "execution_count": 1,
+   "id": "dda93667-9a3b-4ec8-bd15-3be7d271bc8d",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Requirement already satisfied: pdfplumber in c:\\users\\navya\\anaconda\\lib\\site-packages (0.11.7)\n",
+      "Requirement already satisfied: pdfminer.six==20250506 in c:\\users\\navya\\anaconda\\lib\\site-packages (from pdfplumber) (20250506)\n",
+      "Requirement already satisfied: Pillow>=9.1 in c:\\users\\navya\\anaconda\\lib\\site-packages (from pdfplumber) (11.1.0)\n",
+      "Requirement already satisfied: pypdfium2>=4.18.0 in c:\\users\\navya\\anaconda\\lib\\site-packages (from pdfplumber) (4.30.0)\n",
+      "Requirement already satisfied: charset-normalizer>=2.0.0 in c:\\users\\navya\\anaconda\\lib\\site-packages (from pdfminer.six==20250506->pdfplumber) (3.3.2)\n",
+      "Requirement already satisfied: cryptography>=36.0.0 in c:\\users\\navya\\anaconda\\lib\\site-packages (from pdfminer.six==20250506->pdfplumber) (44.0.1)\n",
+      "Requirement already satisfied: cffi>=1.12 in c:\\users\\navya\\anaconda\\lib\\site-packages (from cryptography>=36.0.0->pdfminer.six==20250506->pdfplumber) (1.17.1)\n",
+      "Requirement already satisfied: pycparser in c:\\users\\navya\\anaconda\\lib\\site-packages (from cffi>=1.12->cryptography>=36.0.0->pdfminer.six==20250506->pdfplumber) (2.21)\n"
+     ]
+    }
+   ],
+   "source": [
+    "!pip install pdfplumber"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 2,
+   "id": "aaa9f5ef-8552-4734-a8c1-9621d912652e",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "text/plain": [
+       "['.ipynb_checkpoints', 'HR_policies.pdf', 'RAG_LLMs.ipynb']"
+      ]
+     },
+     "execution_count": 2,
+     "metadata": {},
+     "output_type": "execute_result"
+    }
+   ],
+   "source": [
+    "import os\n",
+    "os.listdir()"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 3,
+   "id": "ba553099-6d41-4cff-b0f8-68fd34200a77",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "HUMAN RESOURCES\n",
+      "POLICY MANUAL\n",
+      "STAFF\n",
+      "2023\n",
+      "IIMA HR Policy Manual 2023 a\n",
+      "b IIMA HR Policy Manual 2023\n",
+      "DECLARATION\n",
+      "The objective of this Manual is to compile the HR policies and\n",
+      "procedures followed in IIMA. It also presents the general rules and\n",
+      "regulations that govern the employees of the Institute.\n",
+      "This Manual supersedes all previous manuals, handbooks, and\n",
+      "memorandums that may have been issued from time to time on\n",
+      "subjects covered in this Manual.\n",
+      "The Institute reserves its right to interpret; cha\n"
+     ]
+    }
+   ],
+   "source": [
+    "import pdfplumber\n",
+    "\n",
+    "file_path = \"HR_policies.pdf\"\n",
+    "all_text = \"\"\n",
+    "\n",
+    "with pdfplumber.open(file_path) as pdf:\n",
+    "    for page in pdf.pages:\n",
+    "        all_text += page.extract_text() + \"\\n\"\n",
+    "\n",
+    "print(all_text[:500])  # prints first 500 characters\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 4,
+   "id": "3b728578-1c45-4f5c-99b3-cfa3f8ab4ae4",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Total chunks created: 856\n",
+      "\n",
+      "First chunk:\n",
+      " HUMAN RESOURCES\n",
+      "POLICY MANUAL\n",
+      "STAFF\n",
+      "2023\n",
+      "IIMA HR Policy Manual 2023 a\n",
+      "b IIMA HR Policy Manual 2023\n",
+      "DECLARATION\n",
+      "The objective of this Manual is to compile the HR policies and\n",
+      "procedures followed in IIMA. It also presents the general rules and\n",
+      "regulations that govern the employees of the Institute.\n",
+      "This Manual supersedes all previous manuals, handbooks, and\n",
+      "memorandums that may have been issued from time to time on\n",
+      "subjects covered in this Manual.\n",
+      "The Institute reserves its right to interpret; cha\n"
+     ]
+    }
+   ],
+   "source": [
+    "def split_text(text, chunk_size=500, overlap=50):\n",
+    "    chunks = []\n",
+    "    start = 0\n",
+    "    \n",
+    "    while start < len(text):\n",
+    "        end = start + chunk_size\n",
+    "        chunk = text[start:end]\n",
+    "        chunks.append(chunk)\n",
+    "        start += chunk_size - overlap  # move forward with overlap\n",
+    "    \n",
+    "    return chunks\n",
+    "\n",
+    "# Split our HR PDF text into chunks\n",
+    "chunks = split_text(all_text, chunk_size=500, overlap=50)\n",
+    "\n",
+    "print(f\"Total chunks created: {len(chunks)}\")\n",
+    "print(\"\\nFirst chunk:\\n\", chunks[0])\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 5,
+   "id": "27732da7-a75e-46d4-8eb4-27b5cb064b5d",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Collecting sentence-transformers\n",
+      "  Downloading sentence_transformers-5.1.0-py3-none-any.whl.metadata (16 kB)\n",
+      "Collecting transformers<5.0.0,>=4.41.0 (from sentence-transformers)\n",
+      "  Downloading transformers-4.56.1-py3-none-any.whl.metadata (42 kB)\n",
+      "Requirement already satisfied: tqdm in c:\\users\\navya\\anaconda\\lib\\site-packages (from sentence-transformers) (4.67.1)\n",
+      "Collecting torch>=1.11.0 (from sentence-transformers)\n",
+      "  Downloading torch-2.8.0-cp313-cp313-win_amd64.whl.metadata (30 kB)\n",
+      "Requirement already satisfied: scikit-learn in c:\\users\\navya\\anaconda\\lib\\site-packages (from sentence-transformers) (1.6.1)\n",
+      "Requirement already satisfied: scipy in c:\\users\\navya\\anaconda\\lib\\site-packages (from sentence-transformers) (1.15.3)\n",
+      "Collecting huggingface-hub>=0.20.0 (from sentence-transformers)\n",
+      "  Downloading huggingface_hub-0.35.0-py3-none-any.whl.metadata (14 kB)\n",
+      "Requirement already satisfied: Pillow in c:\\users\\navya\\anaconda\\lib\\site-packages (from sentence-transformers) (11.1.0)\n",
+      "Requirement already satisfied: typing_extensions>=4.5.0 in c:\\users\\navya\\anaconda\\lib\\site-packages (from sentence-transformers) (4.12.2)\n",
+      "Requirement already satisfied: filelock in c:\\users\\navya\\anaconda\\lib\\site-packages (from transformers<5.0.0,>=4.41.0->sentence-transformers) (3.17.0)\n",
+      "Requirement already satisfied: numpy>=1.17 in c:\\users\\navya\\anaconda\\lib\\site-packages (from transformers<5.0.0,>=4.41.0->sentence-transformers) (2.1.3)\n",
+      "Requirement already satisfied: packaging>=20.0 in c:\\users\\navya\\anaconda\\lib\\site-packages (from transformers<5.0.0,>=4.41.0->sentence-transformers) (24.2)\n",
+      "Requirement already satisfied: pyyaml>=5.1 in c:\\users\\navya\\anaconda\\lib\\site-packages (from transformers<5.0.0,>=4.41.0->sentence-transformers) (6.0.2)\n",
+      "Requirement already satisfied: regex!=2019.12.17 in c:\\users\\navya\\anaconda\\lib\\site-packages (from transformers<5.0.0,>=4.41.0->sentence-transformers) (2024.11.6)\n",
+      "Requirement already satisfied: requests in c:\\users\\navya\\anaconda\\lib\\site-packages (from transformers<5.0.0,>=4.41.0->sentence-transformers) (2.32.3)\n",
+      "Collecting tokenizers<=0.23.0,>=0.22.0 (from transformers<5.0.0,>=4.41.0->sentence-transformers)\n",
+      "  Downloading tokenizers-0.22.1-cp39-abi3-win_amd64.whl.metadata (6.9 kB)\n",
+      "Collecting safetensors>=0.4.3 (from transformers<5.0.0,>=4.41.0->sentence-transformers)\n",
+      "  Downloading safetensors-0.6.2-cp38-abi3-win_amd64.whl.metadata (4.1 kB)\n",
+      "Requirement already satisfied: fsspec>=2023.5.0 in c:\\users\\navya\\anaconda\\lib\\site-packages (from huggingface-hub>=0.20.0->sentence-transformers) (2025.3.2)\n",
+      "Requirement already satisfied: sympy>=1.13.3 in c:\\users\\navya\\anaconda\\lib\\site-packages (from torch>=1.11.0->sentence-transformers) (1.13.3)\n",
+      "Requirement already satisfied: networkx in c:\\users\\navya\\anaconda\\lib\\site-packages (from torch>=1.11.0->sentence-transformers) (3.4.2)\n",
+      "Requirement already satisfied: jinja2 in c:\\users\\navya\\anaconda\\lib\\site-packages (from torch>=1.11.0->sentence-transformers) (3.1.6)\n",
+      "Requirement already satisfied: setuptools in c:\\users\\navya\\anaconda\\lib\\site-packages (from torch>=1.11.0->sentence-transformers) (72.1.0)\n",
+      "Requirement already satisfied: mpmath<1.4,>=1.1.0 in c:\\users\\navya\\anaconda\\lib\\site-packages (from sympy>=1.13.3->torch>=1.11.0->sentence-transformers) (1.3.0)\n",
+      "Requirement already satisfied: colorama in c:\\users\\navya\\anaconda\\lib\\site-packages (from tqdm->sentence-transformers) (0.4.6)\n",
+      "Requirement already satisfied: MarkupSafe>=2.0 in c:\\users\\navya\\anaconda\\lib\\site-packages (from jinja2->torch>=1.11.0->sentence-transformers) (3.0.2)\n",
+      "Requirement already satisfied: charset-normalizer<4,>=2 in c:\\users\\navya\\anaconda\\lib\\site-packages (from requests->transformers<5.0.0,>=4.41.0->sentence-transformers) (3.3.2)\n",
+      "Requirement already satisfied: idna<4,>=2.5 in c:\\users\\navya\\anaconda\\lib\\site-packages (from requests->transformers<5.0.0,>=4.41.0->sentence-transformers) (3.7)\n",
+      "Requirement already satisfied: urllib3<3,>=1.21.1 in c:\\users\\navya\\anaconda\\lib\\site-packages (from requests->transformers<5.0.0,>=4.41.0->sentence-transformers) (2.3.0)\n",
+      "Requirement already satisfied: certifi>=2017.4.17 in c:\\users\\navya\\anaconda\\lib\\site-packages (from requests->transformers<5.0.0,>=4.41.0->sentence-transformers) (2025.8.3)\n",
+      "Requirement already satisfied: joblib>=1.2.0 in c:\\users\\navya\\anaconda\\lib\\site-packages (from scikit-learn->sentence-transformers) (1.4.2)\n",
+      "Requirement already satisfied: threadpoolctl>=3.1.0 in c:\\users\\navya\\anaconda\\lib\\site-packages (from scikit-learn->sentence-transformers) (3.5.0)\n",
+      "Downloading sentence_transformers-5.1.0-py3-none-any.whl (483 kB)\n",
+      "Downloading transformers-4.56.1-py3-none-any.whl (11.6 MB)\n",
+      "   ---------------------------------------- 0.0/11.6 MB ? eta -:--:--\n",
+      "   -------- ------------------------------- 2.4/11.6 MB 11.5 MB/s eta 0:00:01\n",
+      "   ---------------- ----------------------- 4.7/11.6 MB 11.6 MB/s eta 0:00:01\n",
+      "   ---------------------------- ----------- 8.4/11.6 MB 13.8 MB/s eta 0:00:01\n",
+      "   ---------------------------------------- 11.6/11.6 MB 14.6 MB/s eta 0:00:00\n",
+      "Downloading huggingface_hub-0.35.0-py3-none-any.whl (563 kB)\n",
+      "   ---------------------------------------- 0.0/563.4 kB ? eta -:--:--\n",
+      "   --------------------------------------- 563.4/563.4 kB 15.5 MB/s eta 0:00:00\n",
+      "Downloading tokenizers-0.22.1-cp39-abi3-win_amd64.whl (2.7 MB)\n",
+      "   ---------------------------------------- 0.0/2.7 MB ? eta -:--:--\n",
+      "   ---------------------------------------- 2.7/2.7 MB 18.5 MB/s eta 0:00:00\n",
+      "Downloading safetensors-0.6.2-cp38-abi3-win_amd64.whl (320 kB)\n",
+      "Downloading torch-2.8.0-cp313-cp313-win_amd64.whl (241.3 MB)\n",
+      "   ---------------------------------------- 0.0/241.3 MB ? eta -:--:--\n",
+      "    --------------------------------------- 4.7/241.3 MB 22.5 MB/s eta 0:00:11\n",
+      "   - -------------------------------------- 9.2/241.3 MB 22.6 MB/s eta 0:00:11\n",
+      "   -- ------------------------------------- 13.9/241.3 MB 22.7 MB/s eta 0:00:11\n",
+      "   --- ------------------------------------ 18.4/241.3 MB 22.3 MB/s eta 0:00:11\n",
+      "   --- ------------------------------------ 22.5/241.3 MB 22.2 MB/s eta 0:00:10\n",
+      "   ---- ----------------------------------- 27.3/241.3 MB 22.0 MB/s eta 0:00:10\n",
+      "   ----- ---------------------------------- 30.4/241.3 MB 21.1 MB/s eta 0:00:10\n",
+      "   ----- ---------------------------------- 32.8/241.3 MB 19.9 MB/s eta 0:00:11\n",
+      "   ----- ---------------------------------- 35.4/241.3 MB 19.1 MB/s eta 0:00:11\n",
+      "   ------ --------------------------------- 38.3/241.3 MB 18.7 MB/s eta 0:00:11\n",
+      "   ------ --------------------------------- 41.4/241.3 MB 18.2 MB/s eta 0:00:11\n",
+      "   ------- -------------------------------- 44.3/241.3 MB 17.7 MB/s eta 0:00:12\n",
+      "   ------- -------------------------------- 44.3/241.3 MB 17.7 MB/s eta 0:00:12\n",
+      "   ------- -------------------------------- 44.3/241.3 MB 17.7 MB/s eta 0:00:12\n",
+      "   ------- -------------------------------- 44.3/241.3 MB 17.7 MB/s eta 0:00:12\n",
+      "   ------- -------------------------------- 44.3/241.3 MB 17.7 MB/s eta 0:00:12\n",
+      "   ------- -------------------------------- 44.6/241.3 MB 12.6 MB/s eta 0:00:16\n",
+      "   ------- -------------------------------- 45.4/241.3 MB 12.1 MB/s eta 0:00:17\n",
+      "   ------- -------------------------------- 48.0/241.3 MB 12.2 MB/s eta 0:00:16\n",
+      "   -------- ------------------------------- 51.1/241.3 MB 12.2 MB/s eta 0:00:16\n",
+      "   -------- ------------------------------- 54.3/241.3 MB 12.4 MB/s eta 0:00:16\n",
+      "   --------- ------------------------------ 57.9/241.3 MB 12.6 MB/s eta 0:00:15\n",
+      "   ---------- ----------------------------- 61.3/241.3 MB 12.8 MB/s eta 0:00:15\n",
+      "   ---------- ----------------------------- 65.0/241.3 MB 13.0 MB/s eta 0:00:14\n",
+      "   ----------- ---------------------------- 68.7/241.3 MB 13.2 MB/s eta 0:00:14\n",
+      "   ----------- ---------------------------- 72.4/241.3 MB 13.3 MB/s eta 0:00:13\n",
+      "   ------------ --------------------------- 76.0/241.3 MB 13.5 MB/s eta 0:00:13\n",
+      "   ------------- -------------------------- 79.7/241.3 MB 13.6 MB/s eta 0:00:12\n",
+      "   ------------- -------------------------- 83.1/241.3 MB 13.8 MB/s eta 0:00:12\n",
+      "   -------------- ------------------------- 86.8/241.3 MB 13.9 MB/s eta 0:00:12\n",
+      "   -------------- ------------------------- 90.2/241.3 MB 14.0 MB/s eta 0:00:11\n",
+      "   --------------- ------------------------ 93.6/241.3 MB 14.1 MB/s eta 0:00:11\n",
+      "   ---------------- ----------------------- 97.0/241.3 MB 14.1 MB/s eta 0:00:11\n",
+      "   ---------------- ----------------------- 98.6/241.3 MB 14.0 MB/s eta 0:00:11\n",
+      "   ---------------- ---------------------- 102.5/241.3 MB 14.1 MB/s eta 0:00:10\n",
+      "   ---------------- ---------------------- 103.5/241.3 MB 13.9 MB/s eta 0:00:10\n",
+      "   ----------------- --------------------- 106.2/241.3 MB 13.8 MB/s eta 0:00:10\n",
+      "   ----------------- --------------------- 107.7/241.3 MB 13.7 MB/s eta 0:00:10\n",
+      "   ----------------- --------------------- 109.1/241.3 MB 13.5 MB/s eta 0:00:10\n",
+      "   ----------------- --------------------- 110.6/241.3 MB 13.3 MB/s eta 0:00:10\n",
+      "   ------------------ -------------------- 112.7/241.3 MB 13.3 MB/s eta 0:00:10\n",
+      "   ------------------ -------------------- 114.8/241.3 MB 13.2 MB/s eta 0:00:10\n",
+      "   ------------------ -------------------- 117.4/241.3 MB 13.2 MB/s eta 0:00:10\n",
+      "   ------------------- ------------------- 119.8/241.3 MB 13.2 MB/s eta 0:00:10\n",
+      "   ------------------- ------------------- 122.2/241.3 MB 13.1 MB/s eta 0:00:10\n",
+      "   -------------------- ------------------ 125.0/241.3 MB 13.1 MB/s eta 0:00:09\n",
+      "   -------------------- ------------------ 127.9/241.3 MB 13.1 MB/s eta 0:00:09\n",
+      "   --------------------- ----------------- 130.0/241.3 MB 13.0 MB/s eta 0:00:09\n",
+      "   --------------------- ----------------- 132.9/241.3 MB 13.1 MB/s eta 0:00:09\n",
+      "   --------------------- ----------------- 135.8/241.3 MB 13.1 MB/s eta 0:00:09\n",
+      "   ---------------------- ---------------- 138.9/241.3 MB 13.1 MB/s eta 0:00:08\n",
+      "   ---------------------- ---------------- 141.3/241.3 MB 13.1 MB/s eta 0:00:08\n",
+      "   ----------------------- --------------- 143.4/241.3 MB 13.0 MB/s eta 0:00:08\n",
+      "   ----------------------- --------------- 146.0/241.3 MB 13.0 MB/s eta 0:00:08\n",
+      "   ------------------------ -------------- 149.2/241.3 MB 13.1 MB/s eta 0:00:08\n",
+      "   ------------------------ -------------- 152.0/241.3 MB 13.1 MB/s eta 0:00:07\n",
+      "   ------------------------- ------------- 154.9/241.3 MB 13.1 MB/s eta 0:00:07\n",
+      "   ------------------------- ------------- 157.3/241.3 MB 13.1 MB/s eta 0:00:07\n",
+      "   ------------------------- ------------- 159.6/241.3 MB 13.1 MB/s eta 0:00:07\n",
+      "   -------------------------- ------------ 162.0/241.3 MB 13.1 MB/s eta 0:00:07\n",
+      "   -------------------------- ------------ 163.3/241.3 MB 12.9 MB/s eta 0:00:07\n",
+      "   -------------------------- ------------ 165.9/241.3 MB 12.9 MB/s eta 0:00:06\n",
+      "   --------------------------- ----------- 168.3/241.3 MB 12.9 MB/s eta 0:00:06\n",
+      "   --------------------------- ----------- 171.2/241.3 MB 12.9 MB/s eta 0:00:06\n",
+      "   ---------------------------- ---------- 173.8/241.3 MB 12.9 MB/s eta 0:00:06\n",
+      "   ---------------------------- ---------- 176.7/241.3 MB 12.9 MB/s eta 0:00:06\n",
+      "   ----------------------------- --------- 179.6/241.3 MB 12.9 MB/s eta 0:00:05\n",
+      "   ----------------------------- --------- 182.7/241.3 MB 12.9 MB/s eta 0:00:05\n",
+      "   ----------------------------- --------- 185.3/241.3 MB 12.9 MB/s eta 0:00:05\n",
+      "   ------------------------------ -------- 188.0/241.3 MB 12.9 MB/s eta 0:00:05\n",
+      "   ------------------------------ -------- 189.8/241.3 MB 12.9 MB/s eta 0:00:04\n",
+      "   ------------------------------ -------- 191.6/241.3 MB 12.9 MB/s eta 0:00:04\n",
+      "   ------------------------------- ------- 194.5/241.3 MB 12.8 MB/s eta 0:00:04\n",
+      "   ------------------------------- ------- 197.4/241.3 MB 12.9 MB/s eta 0:00:04\n",
+      "   -------------------------------- ------ 200.3/241.3 MB 12.9 MB/s eta 0:00:04\n",
+      "   -------------------------------- ------ 202.4/241.3 MB 12.9 MB/s eta 0:00:04\n",
+      "   --------------------------------- ----- 205.0/241.3 MB 12.8 MB/s eta 0:00:03\n",
+      "   --------------------------------- ----- 207.6/241.3 MB 12.8 MB/s eta 0:00:03\n",
+      "   ---------------------------------- ---- 210.8/241.3 MB 12.9 MB/s eta 0:00:03\n",
+      "   ---------------------------------- ---- 213.4/241.3 MB 12.9 MB/s eta 0:00:03\n",
+      "   ---------------------------------- ---- 216.5/241.3 MB 12.9 MB/s eta 0:00:02\n",
+      "   ----------------------------------- --- 218.6/241.3 MB 12.9 MB/s eta 0:00:02\n",
+      "   ----------------------------------- --- 221.2/241.3 MB 12.9 MB/s eta 0:00:02\n",
+      "   ------------------------------------ -- 223.9/241.3 MB 12.9 MB/s eta 0:00:02\n",
+      "   ------------------------------------ -- 226.5/241.3 MB 12.9 MB/s eta 0:00:02\n",
+      "   ------------------------------------- - 229.4/241.3 MB 12.9 MB/s eta 0:00:01\n",
+      "   ------------------------------------- - 232.5/241.3 MB 12.9 MB/s eta 0:00:01\n",
+      "   --------------------------------------  235.4/241.3 MB 12.9 MB/s eta 0:00:01\n",
+      "   --------------------------------------  236.7/241.3 MB 12.9 MB/s eta 0:00:01\n",
+      "   --------------------------------------  238.6/241.3 MB 12.8 MB/s eta 0:00:01\n",
+      "   --------------------------------------  240.6/241.3 MB 12.8 MB/s eta 0:00:01\n",
+      "   --------------------------------------  241.2/241.3 MB 12.8 MB/s eta 0:00:01\n",
+      "   --------------------------------------- 241.3/241.3 MB 12.6 MB/s eta 0:00:00\n",
+      "Installing collected packages: safetensors, torch, huggingface-hub, tokenizers, transformers, sentence-transformers\n",
+      "\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------ --------------------------------- 1/6 [torch]\n",
+      "   ------------- -------------------------- 2/6 [huggingface-hub]\n",
+      "   ------------- -------------------------- 2/6 [huggingface-hub]\n",
+      "   ------------- -------------------------- 2/6 [huggingface-hub]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   -------------------------- ------------- 4/6 [transformers]\n",
+      "   --------------------------------- ------ 5/6 [sentence-transformers]\n",
+      "   --------------------------------- ------ 5/6 [sentence-transformers]\n",
+      "   ---------------------------------------- 6/6 [sentence-transformers]\n",
+      "\n",
+      "Successfully installed huggingface-hub-0.35.0 safetensors-0.6.2 sentence-transformers-5.1.0 tokenizers-0.22.1 torch-2.8.0 transformers-4.56.1\n"
+     ]
+    }
+   ],
+   "source": [
+    "!pip install sentence-transformers"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 7,
+   "id": "013d40c8-96f0-4b39-bb10-f02398879338",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Created 856 embeddings.\n",
+      "Shape of one embedding: (384,)\n"
+     ]
+    }
+   ],
+   "source": [
+    "from sentence_transformers import SentenceTransformer\n",
+    "\n",
+    "# Load a pre-trained embedding model\n",
+    "model = SentenceTransformer('all-MiniLM-L6-v2')\n",
+    "\n",
+    "# Create embeddings for each chunk\n",
+    "embeddings = model.encode(chunks)\n",
+    "\n",
+    "print(f\"Created {len(embeddings)} embeddings.\")\n",
+    "print(\"Shape of one embedding:\", embeddings[0].shape)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 8,
+   "id": "3e1500d1-ec41-4f7b-b035-3f2afad27881",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Collecting faiss-cpu\n",
+      "  Downloading faiss_cpu-1.12.0-cp313-cp313-win_amd64.whl.metadata (5.2 kB)\n",
+      "Requirement already satisfied: numpy<3.0,>=1.25.0 in c:\\users\\navya\\anaconda\\lib\\site-packages (from faiss-cpu) (2.1.3)\n",
+      "Requirement already satisfied: packaging in c:\\users\\navya\\anaconda\\lib\\site-packages (from faiss-cpu) (24.2)\n",
+      "Downloading faiss_cpu-1.12.0-cp313-cp313-win_amd64.whl (18.2 MB)\n",
+      "   ---------------------------------------- 0.0/18.2 MB ? eta -:--:--\n",
+      "   ------ --------------------------------- 3.1/18.2 MB 16.0 MB/s eta 0:00:01\n",
+      "   ------------------- -------------------- 8.7/18.2 MB 21.6 MB/s eta 0:00:01\n",
+      "   -------------------------- ------------- 12.1/18.2 MB 19.9 MB/s eta 0:00:01\n",
+      "   ------------------------------ --------- 13.9/18.2 MB 17.4 MB/s eta 0:00:01\n",
+      "   ----------------------------------- ---- 16.0/18.2 MB 15.6 MB/s eta 0:00:01\n",
+      "   ---------------------------------------  18.1/18.2 MB 15.0 MB/s eta 0:00:01\n",
+      "   ---------------------------------------- 18.2/18.2 MB 14.6 MB/s eta 0:00:00\n",
+      "Installing collected packages: faiss-cpu\n",
+      "Successfully installed faiss-cpu-1.12.0\n"
+     ]
+    }
+   ],
+   "source": [
+    "!pip install faiss-cpu"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 9,
+   "id": "dbfd3aac-68ec-4779-9513-e69c30f3dc6e",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Number of vectors in the index: 856\n"
+     ]
+    }
+   ],
+   "source": [
+    "import faiss\n",
+    "import numpy as np\n",
+    "\n",
+    "# Convert embeddings list to numpy array\n",
+    "embeddings_array = np.array(embeddings)\n",
+    "\n",
+    "# Create FAISS index (Flat L2 = simple similarity search)\n",
+    "dimension = embeddings_array.shape[1]  # embedding size (384)\n",
+    "index = faiss.IndexFlatL2(dimension)\n",
+    "\n",
+    "# Add embeddings to index\n",
+    "index.add(embeddings_array)\n",
+    "\n",
+    "print(\"Number of vectors in the index:\", index.ntotal)"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 10,
+   "id": "fa36c2f3-11ae-4f05-a852-335587de40e5",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Top matching chunks:\n",
+      "\n",
+      "Result 1:\n",
+      "5 Sanction of this leave is not automatic, but is subject to the exigencies of work at the\n",
+      "Institute.\n",
+      "5.5.6 The leave will be available only to those administrative staff who are confirmed in the\n",
+      "service, and who have put in a minimum of eight years’ service in the Institute.\n",
+      "5.5.7 This leave cannot\n",
+      "------\n",
+      "\n",
+      "Result 2:\n",
+      " treated as leave for the purpose of this concession. The condition of leave\n",
+      "shall not apply to the journeys performed by the members of the families of the employees.\n",
+      "The concession is not admissible to an employee who proceeds on regular leave and then\n",
+      "Entitlements of a fresh recruit :\n",
+      "resigns the\n",
+      "------\n",
+      "\n",
+      "Result 3:\n",
+      "1.7 The HoD should inform the HR Office, if an employee has obtained permission to attend late\n",
+      "or to leave the office early.\n",
+      "(2) PROCEDURE FOR GRANTING LEAVE\n",
+      "2.1 The grant of leave to the Institute employee is governed by the Institute Leave Rules. These\n",
+      "rules are framed in line with the leave rules\n",
+      "------\n",
+      "\n"
+     ]
+    }
+   ],
+   "source": [
+    "query = \"What is the leave policy?\"\n",
+    "query_embedding = model.encode([query])\n",
+    "\n",
+    "# Search top 3 most similar chunks\n",
+    "k = 3\n",
+    "distances, indices = index.search(np.array(query_embedding), k)\n",
+    "\n",
+    "print(\"Top matching chunks:\\n\")\n",
+    "for i, idx in enumerate(indices[0]):\n",
+    "    print(f\"Result {i+1}:\")\n",
+    "    print(chunks[idx][:300])  # show first 300 characters\n",
+    "    print(\"------\\n\")\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 11,
+   "id": "f3e92e1e-c736-42a4-91ee-6fa5218efa09",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Collecting openai\n",
+      "  Downloading openai-1.108.0-py3-none-any.whl.metadata (29 kB)\n",
+      "Requirement already satisfied: anyio<5,>=3.5.0 in c:\\users\\navya\\anaconda\\lib\\site-packages (from openai) (4.7.0)\n",
+      "Requirement already satisfied: distro<2,>=1.7.0 in c:\\users\\navya\\anaconda\\lib\\site-packages (from openai) (1.9.0)\n",
+      "Requirement already satisfied: httpx<1,>=0.23.0 in c:\\users\\navya\\anaconda\\lib\\site-packages (from openai) (0.28.1)\n",
+      "Collecting jiter<1,>=0.4.0 (from openai)\n",
+      "  Downloading jiter-0.11.0-cp313-cp313-win_amd64.whl.metadata (5.3 kB)\n",
+      "Requirement already satisfied: pydantic<3,>=1.9.0 in c:\\users\\navya\\anaconda\\lib\\site-packages (from openai) (2.10.3)\n",
+      "Requirement already satisfied: sniffio in c:\\users\\navya\\anaconda\\lib\\site-packages (from openai) (1.3.0)\n",
+      "Requirement already satisfied: tqdm>4 in c:\\users\\navya\\anaconda\\lib\\site-packages (from openai) (4.67.1)\n",
+      "Requirement already satisfied: typing-extensions<5,>=4.11 in c:\\users\\navya\\anaconda\\lib\\site-packages (from openai) (4.12.2)\n",
+      "Requirement already satisfied: idna>=2.8 in c:\\users\\navya\\anaconda\\lib\\site-packages (from anyio<5,>=3.5.0->openai) (3.7)\n",
+      "Requirement already satisfied: certifi in c:\\users\\navya\\anaconda\\lib\\site-packages (from httpx<1,>=0.23.0->openai) (2025.8.3)\n",
+      "Requirement already satisfied: httpcore==1.* in c:\\users\\navya\\anaconda\\lib\\site-packages (from httpx<1,>=0.23.0->openai) (1.0.9)\n",
+      "Requirement already satisfied: h11>=0.16 in c:\\users\\navya\\anaconda\\lib\\site-packages (from httpcore==1.*->httpx<1,>=0.23.0->openai) (0.16.0)\n",
+      "Requirement already satisfied: annotated-types>=0.6.0 in c:\\users\\navya\\anaconda\\lib\\site-packages (from pydantic<3,>=1.9.0->openai) (0.6.0)\n",
+      "Requirement already satisfied: pydantic-core==2.27.1 in c:\\users\\navya\\anaconda\\lib\\site-packages (from pydantic<3,>=1.9.0->openai) (2.27.1)\n",
+      "Requirement already satisfied: colorama in c:\\users\\navya\\anaconda\\lib\\site-packages (from tqdm>4->openai) (0.4.6)\n",
+      "Downloading openai-1.108.0-py3-none-any.whl (948 kB)\n",
+      "   ---------------------------------------- 0.0/948.1 kB ? eta -:--:--\n",
+      "   --------------------------------------- 948.1/948.1 kB 19.2 MB/s eta 0:00:00\n",
+      "Downloading jiter-0.11.0-cp313-cp313-win_amd64.whl (202 kB)\n",
+      "Installing collected packages: jiter, openai\n",
+      "\n",
+      "   -------------------- ------------------- 1/2 [openai]\n",
+      "   -------------------- ------------------- 1/2 [openai]\n",
+      "   -------------------- ------------------- 1/2 [openai]\n",
+      "   -------------------- ------------------- 1/2 [openai]\n",
+      "   -------------------- ------------------- 1/2 [openai]\n",
+      "   -------------------- ------------------- 1/2 [openai]\n",
+      "   -------------------- ------------------- 1/2 [openai]\n",
+      "   -------------------- ------------------- 1/2 [openai]\n",
+      "   ---------------------------------------- 2/2 [openai]\n",
+      "\n",
+      "Successfully installed jiter-0.11.0 openai-1.108.0\n"
+     ]
+    }
+   ],
+   "source": [
+    "!pip install openai"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 13,
+   "id": "205c9448-d5fe-4e17-83d6-24c92cbb717b",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "import os\n",
+    "os.environ[\"OPENAI_API_KEY\"] = \"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\""
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 14,
+   "id": "feade27c-2fb3-449a-97af-81989b4c4c64",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "sk-proj-uH\n"
+     ]
+    }
+   ],
+   "source": [
+    "import openai\n",
+    "print(os.getenv(\"OPENAI_API_KEY\")[:10])"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 16,
+   "id": "5e67754c-b505-49ce-ac56-d4c66a12c282",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Generated embeddings for 5 chunks\n",
+      "Embedding vector size: 384\n",
+      "First 10 numbers of first embedding: [-0.11063296  0.06441783 -0.02597572  0.01077681 -0.02594274  0.02623023\n",
+      "  0.00178239 -0.04849508 -0.0835256   0.06416667]\n"
+     ]
+    }
+   ],
+   "source": [
+    "from sentence_transformers import SentenceTransformer\n",
+    "\n",
+    "# Load a small but good model\n",
+    "model = SentenceTransformer(\"all-MiniLM-L6-v2\")\n",
+    "\n",
+    "# Generate embeddings for first 5 chunks\n",
+    "sample_chunks = chunks[:5]\n",
+    "embeddings = model.encode(sample_chunks)\n",
+    "\n",
+    "print(\"Generated embeddings for\", len(embeddings), \"chunks\")\n",
+    "print(\"Embedding vector size:\", len(embeddings[0]))\n",
+    "print(\"First 10 numbers of first embedding:\", embeddings[0][:10])\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 17,
+   "id": "81f2ccb2-167b-4989-829d-e0c31668080f",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Requirement already satisfied: sentence-transformers in c:\\users\\navya\\anaconda\\lib\\site-packages (5.1.0)\n",
+      "Requirement already satisfied: transformers<5.0.0,>=4.41.0 in c:\\users\\navya\\anaconda\\lib\\site-packages (from sentence-transformers) (4.56.1)\n",
+      "Requirement already satisfied: tqdm in c:\\users\\navya\\anaconda\\lib\\site-packages (from sentence-transformers) (4.67.1)\n",
+      "Requirement already satisfied: torch>=1.11.0 in c:\\users\\navya\\anaconda\\lib\\site-packages (from sentence-transformers) (2.8.0)\n",
+      "Requirement already satisfied: scikit-learn in c:\\users\\navya\\anaconda\\lib\\site-packages (from sentence-transformers) (1.6.1)\n",
+      "Requirement already satisfied: scipy in c:\\users\\navya\\anaconda\\lib\\site-packages (from sentence-transformers) (1.15.3)\n",
+      "Requirement already satisfied: huggingface-hub>=0.20.0 in c:\\users\\navya\\anaconda\\lib\\site-packages (from sentence-transformers) (0.35.0)\n",
+      "Requirement already satisfied: Pillow in c:\\users\\navya\\anaconda\\lib\\site-packages (from sentence-transformers) (11.1.0)\n",
+      "Requirement already satisfied: typing_extensions>=4.5.0 in c:\\users\\navya\\anaconda\\lib\\site-packages (from sentence-transformers) (4.12.2)\n",
+      "Requirement already satisfied: filelock in c:\\users\\navya\\anaconda\\lib\\site-packages (from transformers<5.0.0,>=4.41.0->sentence-transformers) (3.17.0)\n",
+      "Requirement already satisfied: numpy>=1.17 in c:\\users\\navya\\anaconda\\lib\\site-packages (from transformers<5.0.0,>=4.41.0->sentence-transformers) (2.1.3)\n",
+      "Requirement already satisfied: packaging>=20.0 in c:\\users\\navya\\anaconda\\lib\\site-packages (from transformers<5.0.0,>=4.41.0->sentence-transformers) (24.2)\n",
+      "Requirement already satisfied: pyyaml>=5.1 in c:\\users\\navya\\anaconda\\lib\\site-packages (from transformers<5.0.0,>=4.41.0->sentence-transformers) (6.0.2)\n",
+      "Requirement already satisfied: regex!=2019.12.17 in c:\\users\\navya\\anaconda\\lib\\site-packages (from transformers<5.0.0,>=4.41.0->sentence-transformers) (2024.11.6)\n",
+      "Requirement already satisfied: requests in c:\\users\\navya\\anaconda\\lib\\site-packages (from transformers<5.0.0,>=4.41.0->sentence-transformers) (2.32.3)\n",
+      "Requirement already satisfied: tokenizers<=0.23.0,>=0.22.0 in c:\\users\\navya\\anaconda\\lib\\site-packages (from transformers<5.0.0,>=4.41.0->sentence-transformers) (0.22.1)\n",
+      "Requirement already satisfied: safetensors>=0.4.3 in c:\\users\\navya\\anaconda\\lib\\site-packages (from transformers<5.0.0,>=4.41.0->sentence-transformers) (0.6.2)\n",
+      "Requirement already satisfied: fsspec>=2023.5.0 in c:\\users\\navya\\anaconda\\lib\\site-packages (from huggingface-hub>=0.20.0->sentence-transformers) (2025.3.2)\n",
+      "Requirement already satisfied: sympy>=1.13.3 in c:\\users\\navya\\anaconda\\lib\\site-packages (from torch>=1.11.0->sentence-transformers) (1.13.3)\n",
+      "Requirement already satisfied: networkx in c:\\users\\navya\\anaconda\\lib\\site-packages (from torch>=1.11.0->sentence-transformers) (3.4.2)\n",
+      "Requirement already satisfied: jinja2 in c:\\users\\navya\\anaconda\\lib\\site-packages (from torch>=1.11.0->sentence-transformers) (3.1.6)\n",
+      "Requirement already satisfied: setuptools in c:\\users\\navya\\anaconda\\lib\\site-packages (from torch>=1.11.0->sentence-transformers) (72.1.0)\n",
+      "Requirement already satisfied: mpmath<1.4,>=1.1.0 in c:\\users\\navya\\anaconda\\lib\\site-packages (from sympy>=1.13.3->torch>=1.11.0->sentence-transformers) (1.3.0)\n",
+      "Requirement already satisfied: colorama in c:\\users\\navya\\anaconda\\lib\\site-packages (from tqdm->sentence-transformers) (0.4.6)\n",
+      "Requirement already satisfied: MarkupSafe>=2.0 in c:\\users\\navya\\anaconda\\lib\\site-packages (from jinja2->torch>=1.11.0->sentence-transformers) (3.0.2)\n",
+      "Requirement already satisfied: charset-normalizer<4,>=2 in c:\\users\\navya\\anaconda\\lib\\site-packages (from requests->transformers<5.0.0,>=4.41.0->sentence-transformers) (3.3.2)\n",
+      "Requirement already satisfied: idna<4,>=2.5 in c:\\users\\navya\\anaconda\\lib\\site-packages (from requests->transformers<5.0.0,>=4.41.0->sentence-transformers) (3.7)\n",
+      "Requirement already satisfied: urllib3<3,>=1.21.1 in c:\\users\\navya\\anaconda\\lib\\site-packages (from requests->transformers<5.0.0,>=4.41.0->sentence-transformers) (2.3.0)\n",
+      "Requirement already satisfied: certifi>=2017.4.17 in c:\\users\\navya\\anaconda\\lib\\site-packages (from requests->transformers<5.0.0,>=4.41.0->sentence-transformers) (2025.8.3)\n",
+      "Requirement already satisfied: joblib>=1.2.0 in c:\\users\\navya\\anaconda\\lib\\site-packages (from scikit-learn->sentence-transformers) (1.4.2)\n",
+      "Requirement already satisfied: threadpoolctl>=3.1.0 in c:\\users\\navya\\anaconda\\lib\\site-packages (from scikit-learn->sentence-transformers) (3.5.0)\n"
+     ]
+    }
+   ],
+   "source": [
+    "!pip install sentence-transformers"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 18,
+   "id": "4d0faf96-2731-435e-8480-314e7a29e3d3",
+   "metadata": {},
+   "outputs": [],
+   "source": [
+    "from sentence_transformers import SentenceTransformer\n",
+    "\n",
+    "# Load a lightweight but powerful model\n",
+    "model = SentenceTransformer(\"all-MiniLM-L6-v2\")"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 19,
+   "id": "2f4f367b-bd7a-4d92-a6b4-c31a1c03339d",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Generated embeddings for 5 chunks\n",
+      "Embedding vector size: 384\n",
+      "First 10 numbers of first embedding: [-0.11063296  0.06441783 -0.02597572  0.01077681 -0.02594274  0.02623023\n",
+      "  0.00178239 -0.04849508 -0.0835256   0.06416667]\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Generate embeddings for first 5 chunks\n",
+    "sample_chunks = chunks[:5]\n",
+    "embeddings = model.encode(sample_chunks)\n",
+    "\n",
+    "print(\"Generated embeddings for\", len(embeddings), \"chunks\")\n",
+    "print(\"Embedding vector size:\", len(embeddings[0]))\n",
+    "print(\"First 10 numbers of first embedding:\", embeddings[0][:10])\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 20,
+   "id": "02d1031c-baa2-420b-9cc7-4056137fa499",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "09e136740ba94bc39cd018951c92da84",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "Batches:   0%|          | 0/27 [00:00<?, ?it/s]"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Total embeddings created: 856\n",
+      "Each embedding size: 384\n"
+     ]
+    }
+   ],
+   "source": [
+    "# Embed ALL chunks (not just 5)\n",
+    "all_embeddings = model.encode(chunks, show_progress_bar=True)\n",
+    "\n",
+    "print(\"Total embeddings created:\", len(all_embeddings))\n",
+    "print(\"Each embedding size:\", len(all_embeddings[0]))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 21,
+   "id": "619f5277-28eb-4322-9720-63a30a2111ab",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "FAISS index created\n",
+      "Number of vectors in the index: 856\n",
+      "\n",
+      "---\n",
+      "Distance: 0.8343602418899536\n",
+      "Text: 5 Sanction of this leave is not automatic, but is subject to the exigencies of work at the\n",
+      "Institute.\n",
+      "5.5.6 The leave will be available only to those administrative staff who are confirmed in the\n",
+      "service, and who have put in a minimum of eight years’ service in the Institute.\n",
+      "5.5.7 This leave cannot\n",
+      "\n",
+      "---\n",
+      "Distance: 0.887566328048706\n",
+      "Text:  treated as leave for the purpose of this concession. The condition of leave\n",
+      "shall not apply to the journeys performed by the members of the families of the employees.\n",
+      "The concession is not admissible to an employee who proceeds on regular leave and then\n",
+      "Entitlements of a fresh recruit :\n",
+      "resigns the\n",
+      "\n",
+      "---\n",
+      "Distance: 0.9041091203689575\n",
+      "Text: 1.7 The HoD should inform the HR Office, if an employee has obtained permission to attend late\n",
+      "or to leave the office early.\n",
+      "(2) PROCEDURE FOR GRANTING LEAVE\n",
+      "2.1 The grant of leave to the Institute employee is governed by the Institute Leave Rules. These\n",
+      "rules are framed in line with the leave rules\n"
+     ]
+    }
+   ],
+   "source": [
+    "import faiss\n",
+    "import numpy as np\n",
+    "\n",
+    "# Convert embeddings list into a numpy array\n",
+    "embedding_matrix = np.array(all_embeddings, dtype=\"float32\")\n",
+    "\n",
+    "# Create a FAISS index (using cosine similarity / inner product)\n",
+    "dimension = embedding_matrix.shape[1]  # should be 384\n",
+    "index = faiss.IndexFlatL2(dimension)\n",
+    "\n",
+    "# Add all embeddings to the index\n",
+    "index.add(embedding_matrix)\n",
+    "\n",
+    "print(\"FAISS index created\")\n",
+    "print(\"Number of vectors in the index:\", index.ntotal)\n",
+    "\n",
+    "\n",
+    "# Function to search similar chunks\n",
+    "def search_faiss(query, top_k=3):\n",
+    "    # Embed the query\n",
+    "    query_vector = model.encode([query])\n",
+    "    query_vector = np.array(query_vector, dtype=\"float32\")\n",
+    "    \n",
+    "    # Search in FAISS\n",
+    "    distances, indices = index.search(query_vector, top_k)\n",
+    "    \n",
+    "    results = []\n",
+    "    for i, idx in enumerate(indices[0]):\n",
+    "        results.append({\n",
+    "            \"chunk\": chunks[idx],\n",
+    "            \"distance\": float(distances[0][i])\n",
+    "        })\n",
+    "    return results\n",
+    "\n",
+    "\n",
+    "# Example search\n",
+    "query = \"What is the leave policy?\"\n",
+    "results = search_faiss(query, top_k=3)\n",
+    "\n",
+    "for r in results:\n",
+    "    print(\"\\n---\")\n",
+    "    print(\"Distance:\", r[\"distance\"])\n",
+    "    print(\"Text:\", r[\"chunk\"][:300])  # print first 300 chars\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 23,
+   "id": "e345055f-78e0-4f11-8a8f-72674df36f79",
+   "metadata": {},
+   "outputs": [
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "cc292caee6844d96885f9c015eaedcb2",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "config.json:   0%|          | 0.00/571 [00:00<?, ?B/s]"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "C:\\Users\\navya\\Anaconda\\Lib\\site-packages\\huggingface_hub\\file_download.py:143: UserWarning: `huggingface_hub` cache-system uses symlinks by default to efficiently store duplicated files but your machine does not support them in C:\\Users\\navya\\.cache\\huggingface\\hub\\models--deepset--roberta-base-squad2. Caching files will still work but in a degraded version that might require more space on your disk. This warning can be disabled by setting the `HF_HUB_DISABLE_SYMLINKS_WARNING` environment variable. For more details, see https://huggingface.co/docs/huggingface_hub/how-to-cache#limitations.\n",
+      "To support symlinks on Windows, you either need to activate Developer Mode or to run Python as an administrator. In order to activate developer mode, see this article: https://docs.microsoft.com/en-us/windows/apps/get-started/enable-your-device-for-development\n",
+      "  warnings.warn(message)\n",
+      "Xet Storage is enabled for this repo, but the 'hf_xet' package is not installed. Falling back to regular HTTP download. For better performance, install the package with: `pip install huggingface_hub[hf_xet]` or `pip install hf_xet`\n"
+     ]
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "29b6392b192e48ec903a390413925153",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "model.safetensors:   0%|          | 0.00/496M [00:00<?, ?B/s]"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "98d36cde42a04746b0c8d50f99a41080",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "tokenizer_config.json:   0%|          | 0.00/79.0 [00:00<?, ?B/s]"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "8a6cf33a508e4979ac392bff7773f1d1",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "vocab.json: 0.00B [00:00, ?B/s]"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "e7d8be2eee344fd998efb93973b9ba07",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "merges.txt: 0.00B [00:00, ?B/s]"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "adc4a890d475436ab70cd65dd4d9fcb6",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "special_tokens_map.json:   0%|          | 0.00/772 [00:00<?, ?B/s]"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "e89e831f99d846fa996e1099693e4844",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "Fetching 0 files: 0it [00:00, ?it/s]"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "e837961b5d83438c8eb96fe3df14b4e8",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "Fetching 1 files:   0%|          | 0/1 [00:00<?, ?it/s]"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "data": {
+      "application/vnd.jupyter.widget-view+json": {
+       "model_id": "78933f4dc5b34cd3a69e4fb6e4473702",
+       "version_major": 2,
+       "version_minor": 0
+      },
+      "text/plain": [
+       "Fetching 0 files: 0it [00:00, ?it/s]"
+      ]
+     },
+     "metadata": {},
+     "output_type": "display_data"
+    },
+    {
+     "name": "stderr",
+     "output_type": "stream",
+     "text": [
+      "Device set to use cpu\n",
+      "C:\\Users\\navya\\Anaconda\\Lib\\site-packages\\transformers\\pipelines\\question_answering.py:395: FutureWarning: Passing a list of SQuAD examples to the pipeline is deprecated and will be removed in v5. Inputs should be passed using the `question` and `context` keyword arguments instead.\n",
+      "  warnings.warn(\n"
+     ]
+    },
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "Institute Leave Rules\n"
+     ]
+    }
+   ],
+   "source": [
+    "from transformers import pipeline\n",
+    "\n",
+    "# Load a local QA model (can run on CPU or GPU)\n",
+    "qa_pipeline = pipeline(\"question-answering\", model=\"deepset/roberta-base-squad2\")\n",
+    "\n",
+    "def ask_hr_bot_local(query, top_k=3):\n",
+    "    # Search relevant chunks from FAISS\n",
+    "    results = search_faiss(query, top_k=top_k)\n",
+    "    context = \"\\n\\n\".join([r[\"chunk\"] for r in results])\n",
+    "    \n",
+    "    # Run local QA model\n",
+    "    answer = qa_pipeline({\n",
+    "        \"context\": context,\n",
+    "        \"question\": query\n",
+    "    })\n",
+    "    return answer[\"answer\"]\n",
+    "\n",
+    "# 🔎 Example usage\n",
+    "print(ask_hr_bot_local(\"What is the leave policy?\"))\n"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 24,
+   "id": "1d7b0f47-06d5-42f4-abfd-bc5f47c54c13",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "🤖 HR Bot: Institute Leave Rules\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(\"🤖 HR Bot:\", ask_hr_bot_local(\"What is the leave policy?\"))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": 26,
+   "id": "e1f92a7f-f592-43a1-9b84-d5fcd1ea27bb",
+   "metadata": {},
+   "outputs": [
+    {
+     "name": "stdout",
+     "output_type": "stream",
+     "text": [
+      "🤖 HR Bot: 9:00 am to 5:45 pm\n"
+     ]
+    }
+   ],
+   "source": [
+    "print(\"🤖 HR Bot:\", ask_hr_bot_local(\"What are the office working hours??\"))"
+   ]
+  },
+  {
+   "cell_type": "code",
+   "execution_count": null,
+   "id": "afa0a421-f28d-428e-b102-e5514adf2fae",
+   "metadata": {},
+   "outputs": [],
+   "source": []
+  }
+ ],
+ "metadata": {
+  "kernelspec": {
+   "display_name": "Python [conda env:base] *",
+   "language": "python",
+   "name": "conda-base-py"
+  },
+  "language_info": {
+   "codemirror_mode": {
+    "name": "ipython",
+    "version": 3
+   },
+   "file_extension": ".py",
+   "mimetype": "text/x-python",
+   "name": "python",
+   "nbconvert_exporter": "python",
+   "pygments_lexer": "ipython3",
+   "version": "3.13.5"
+  }
+ },
+ "nbformat": 4,
+ "nbformat_minor": 5
+}
